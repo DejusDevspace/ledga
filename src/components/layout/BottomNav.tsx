@@ -12,31 +12,33 @@ import {
 import { ROUTES } from "@/constants/routes";
 
 const NAV_ITEMS = [
-  { href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-  { href: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
-  { href: ROUTES.INSIGHTS, icon: TrendingUp },
-  { href: ROUTES.REPORTS, icon: FileText },
-  { href: ROUTES.SETTINGS.ROOT, icon: Settings },
+  { label: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard },
+  { label: "Trans.", href: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
+  { label: "Insights", href: ROUTES.INSIGHTS, icon: TrendingUp },
+  { label: "Reports", href: ROUTES.REPORTS, icon: FileText },
+  { label: "Settings", href: ROUTES.SETTINGS.ROOT, icon: Settings },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-bg-surface fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t-2 border-(--color-border) p-2">
-      {NAV_ITEMS.map(({ href, icon: Icon }) => {
+    <nav className="bg-bg-base fixed bottom-0 left-0 z-50 flex h-16 w-full items-center justify-around border-t-2 border-black px-2 shadow-[0px_-4px_0px_#000] md:hidden">
+      {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
         const isActive = pathname === href || pathname.startsWith(href + "/");
+
         return (
           <Link
             key={href}
             href={href}
-            className={`rounded-none p-3 transition-colors ${
+            className={
               isActive
-                ? "bg-accent-primary border-2 border-(--color-border) text-white shadow-[2px_2px_0px_#000]"
-                : "text-text-secondary hover:text-text-primary border-2 border-transparent"
-            }`}
+                ? "bg-accent-primary flex h-12 flex-col items-center justify-center border-2 border-black px-3 font-mono text-[10px] text-black transition-transform active:scale-95"
+                : "hover:text-accent-primary flex flex-col items-center justify-center font-mono text-[10px] text-white opacity-70 transition-colors"
+            }
           >
-            <Icon size={20} />
+            <Icon size={22} />
+            <span>{label}</span>
           </Link>
         );
       })}

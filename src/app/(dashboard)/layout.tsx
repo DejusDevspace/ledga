@@ -1,50 +1,29 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
-import TopBar from "@/components/layout/TopBar";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Fetch profile for display name
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .single();
-
-  const displayName =
-    profile?.display_name || user.user_metadata?.display_name || "User";
-  const email = user.email || "";
-
   return (
-    <div className="bg-bg-base flex min-h-screen flex-col md:flex-row">
-      <div className="hidden md:block">
-        <Sidebar displayName={displayName} email={email} />
-      </div>
+    <div className="bg-bg-base relative flex min-h-screen">
+      {/* Subtle dot-grid background — decorative only */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.04]"
+        style={{
+          backgroundImage: "radial-gradient(#A4C9FF 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
 
-      <main className="flex-1 pb-16 md:ml-60 md:pb-0">
-        <div className="md:hidden">
-          <TopBar />
-        </div>
-        <div className="mx-auto max-w-6xl p-4 md:p-8">{children}</div>
+      <Sidebar />
+      <BottomNav />
+
+      {/* Main content */}
+      <main className="relative z-10 mb-16 min-h-screen flex-1 p-6 md:mb-0 md:ml-60">
+        {children}
       </main>
-
-      <div className="md:hidden">
-        <BottomNav />
-      </div>
     </div>
   );
 }
