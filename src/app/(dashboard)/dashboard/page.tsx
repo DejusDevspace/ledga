@@ -1,61 +1,45 @@
-import { SummaryStats, Transaction } from "@/types";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import DashboardClient from "@/components/features/dashboard/DashboardClient";
+import type { UserSheet } from "@/types/sheet";
 
-// DUMMY DATA — replace with real fetch
-const DUMMY_STATS: SummaryStats = {
-  totalIncome: 1250000,
-  totalExpenses: 850000,
-  netBalance: 400000,
-  savingsRate: 32,
-};
+export default async function DashboardPage() {
+  const supabase = await createClient();
 
-const DUMMY_TRANSACTIONS: Transaction[] = [
-  {
-    id: "1",
-    date: "2025-01-15",
-    type: "income",
-    category: "Salary/Freelance",
-    description: "Design Retainer",
-    amount: 1250000,
-  },
-  {
-    id: "2",
-    date: "2025-01-16",
-    type: "expense",
-    category: "Food & Groceries",
-    description: "Supermarket",
-    amount: 45000,
-  },
-];
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-export default function DashboardPage() {
-  return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <h1 className="font-display text-text-primary text-3xl font-bold">
-          Dashboard
-        </h1>
-        {/* TODO: PeriodSelector */}
-        <select className="input-brutalist w-full sm:w-48">
-          <option>This Month</option>
-          <option>Last 3 Months</option>
-          <option>This Year</option>
-        </select>
-      </header>
+  if (!session) {
+    redirect("/login");
+  }
 
-      {/* DUMMY SHELL */}
-      <div className="card-brutalist-lg">
-        <p className="text-text-secondary mb-4">Summary Stats</p>
-        <pre className="bg-bg-base text-text-primary overflow-auto rounded p-4 text-xs">
-          {JSON.stringify(DUMMY_STATS, null, 2)}
-        </pre>
-      </div>
+  // Fetch profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
 
-      <div className="card-brutalist-lg">
-        <p className="text-text-secondary mb-4">Recent Transactions</p>
-        <pre className="bg-bg-base text-text-primary overflow-auto rounded p-4 text-xs">
-          {JSON.stringify(DUMMY_TRANSACTIONS, null, 2)}
-        </pre>
-      </div>
-    </div>
-  );
+  // Fetch user_sheets
+  const { data: sheetsData } = await supabase
+    .from("user_sheets")
+    .select("*")
+    .eq("user_id", session.user.id)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
+
+  // Map to UserSheet type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sheets: UserSheet[] = (sheetsData || []).map((s: any) => ({
+    id: s.id,
+    userId: s.user_id,
+    sheetId: s.sheet_id,
+    sheetLabel: s.sheet_label || s.title || "Untitled",
+    formUrl: s.form_url || undefined,
+    isPrimary: s.is_primary,
+    createdAt: s.created_at,
+  }));
+
+  return <DashboardClient profile={profile} sheets={sheets} />;
 }
