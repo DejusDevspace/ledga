@@ -1,21 +1,30 @@
-export default function SheetsSettingsPage() {
-  return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="font-display text-text-primary text-2xl font-bold">
-          Connected Sheets
-        </h1>
-      </header>
-      <div className="card-brutalist flex flex-col gap-4">
-        <div className="flex items-center justify-between rounded-sm border-2 border-(--color-border) p-4">
-          <div>
-            <p className="font-bold">Main — 2025</p>
-            <p className="text-text-secondary text-xs">Primary Sheet</p>
-          </div>
-          <span className="badge badge-primary">Active</span>
-        </div>
-        <button className="btn-outlined self-start">Connect New Sheet</button>
-      </div>
-    </div>
-  );
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import SheetsManager from "@/components/features/settings/SheetsManager";
+import type { UserSheet } from "@/types";
+
+export default async function SheetsPage() {
+  const supabase = await createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) redirect("/login");
+
+  const { data } = await supabase
+    .from("user_sheets")
+    .select("*")
+    .eq("user_id", session.user.id)
+    .order("is_primary", { ascending: false });
+
+  const initialSheets: UserSheet[] = (data || []).map((s) => ({
+    id: s.id,
+    userId: s.user_id,
+    sheetId: s.sheet_id,
+    sheetLabel: s.sheet_label || s.title || "Untitled",
+    formUrl: s.form_url || undefined,
+    isPrimary: s.is_primary,
+    createdAt: s.created_at,
+  }));
+
+  return <SheetsManager initialSheets={initialSheets} />;
 }
