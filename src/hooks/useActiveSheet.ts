@@ -1,28 +1,34 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { UserSheet } from "@/types";
 
 const STORAGE_KEY = "ledga_active_sheet_id";
 
-function resolveInitialSheet(sheets: UserSheet[]): UserSheet | null {
-  if (sheets.length === 0) return null;
-
-  if (typeof window !== "undefined") {
-    const savedId = localStorage.getItem(STORAGE_KEY);
-    const saved = savedId ? sheets.find((s) => s.id === savedId) : null;
-    if (saved) return saved;
-  }
-
-  return sheets.find((s) => s.isPrimary) ?? sheets[0];
-}
-
 export function useActiveSheet(sheets: UserSheet[]) {
-  const initialSheet = useMemo(() => resolveInitialSheet(sheets), [sheets]);
-  const [activeSheet, setActiveSheetState] = useState<UserSheet | null>(initialSheet);
+  const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedSheetId(saved);
+      }
+    }
+  }, []);
+
+  const activeSheet = useMemo(() => {
+    if (sheets.length === 0) return null;
+    if (selectedSheetId) {
+      const found = sheets.find((s) => s.id === selectedSheetId);
+      if (found) return found;
+    }
+    return sheets.find((s) => s.isPrimary) ?? sheets[0];
+  }, [sheets, selectedSheetId]);
 
   const setActiveSheet = (sheet: UserSheet) => {
-    setActiveSheetState(sheet);
+    setSelectedSheetId(sheet.id);
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, sheet.id);
     }
