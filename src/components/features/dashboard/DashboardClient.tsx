@@ -43,7 +43,7 @@ export default function DashboardClient({ sheets }: Props) {
 
   // Debug: fromCache indicator per instructions
   if (!loading && !error) {
-    console.log("[Dashboard] Tranasctions loaded. fromCache:", fromCache);
+    console.log("[Dashboard] Transactions loaded. fromCache:", fromCache);
   }
 
   // Filter & Compute

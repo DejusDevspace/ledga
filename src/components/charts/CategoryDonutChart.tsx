@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import type { CategoryTotal } from "@/types/analytics";
 import { formatNaira } from "@/lib/analytics/formatters";
@@ -19,6 +20,13 @@ const COLORS = [
 ];
 
 export default function CategoryDonutChart({ data, totalExpenses }: Props) {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHasMounted(true);
+  }, []);
+
   return (
     <div className="bg-bg-surface flex flex-col border-2 border-black p-6 shadow-[4px_4px_0px_#000] lg:col-span-4">
       <h3 className="font-display mb-8 text-center text-xl font-black tracking-tighter uppercase italic">
@@ -33,25 +41,33 @@ export default function CategoryDonutChart({ data, totalExpenses }: Props) {
           <div className="text-text-secondary font-mono text-[10px]">TOTAL</div>
         </div>
 
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie
-              data={data}
-              innerRadius={60}
-              outerRadius={90}
-              paddingAngle={2}
-              dataKey="total"
-              stroke="none"
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+        {!hasMounted ? (
+          <div className="skeleton h-[200px] w-[200px] rounded-full" />
+        ) : (
+          <ResponsiveContainer
+            width="100%"
+            height={200}
+            debounce={100}
+          >
+            <PieChart>
+              <Pie
+                data={data}
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={2}
+                dataKey="total"
+                stroke="none"
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
