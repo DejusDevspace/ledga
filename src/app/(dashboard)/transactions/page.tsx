@@ -13,8 +13,8 @@ import {
   searchByDescription,
   sortTransactions,
 } from "@/lib/analytics/filters";
-import { TRANSACTION_CATEGORIES } from "@/constants/categories";
 import { formatNaira, formatDate } from "@/lib/analytics/formatters";
+import { getCategoryColor, getCategoryColorRGBA } from "@/lib/analytics/colors";
 import type { Transaction } from "@/types";
 import {
   Download,
@@ -30,16 +30,18 @@ export default function TransactionsPage() {
   const { loading: sheetsLoading } = useUserSheets();
   const { activeSheet } = useActiveSheet();
   const { period, setPeriod } = usePeriod();
-  const { transactions, loading: txLoading } = useTransactions(
-    activeSheet?.sheetId ?? null
-  );
+  const {
+    transactions,
+    categories: availableCategories,
+    loading: txLoading,
+  } = useTransactions(activeSheet?.sheetId ?? null);
 
   const loading = sheetsLoading || txLoading;
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [type, setType] = useState<"all" | "income" | "expense">("all");
-  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<keyof Transaction>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -56,8 +58,8 @@ export default function TransactionsPage() {
 
     result = filterByType(result, type);
 
-    if (categories.length > 0) {
-      result = filterByCategories(result, categories);
+    if (selectedCategories.length > 0) {
+      result = filterByCategories(result, selectedCategories);
     }
 
     result = searchByDescription(result, search);
@@ -70,7 +72,7 @@ export default function TransactionsPage() {
     dateFrom,
     dateTo,
     type,
-    categories,
+    selectedCategories,
     search,
     sortBy,
     sortDir,
@@ -108,7 +110,7 @@ export default function TransactionsPage() {
     setDateFrom("");
     setDateTo("");
     setType("all");
-    setCategories([]);
+    setSelectedCategories([]);
     setSearch("");
     setSortBy("date");
     setSortDir("desc");
@@ -129,12 +131,12 @@ export default function TransactionsPage() {
   const toggleCategory = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     if (val === "ALL") {
-      setCategories([]);
+      setSelectedCategories([]);
     } else {
-      if (!categories.includes(val)) {
-        setCategories([...categories, val]);
+      if (!selectedCategories.includes(val)) {
+        setSelectedCategories([...selectedCategories, val]);
       } else {
-        setCategories(categories.filter((c) => c !== val));
+        setSelectedCategories(selectedCategories.filter((c) => c !== val));
       }
     }
     setPage(1);
@@ -226,14 +228,14 @@ export default function TransactionsPage() {
               className="bg-bg-elevated text-text-primary focus:border-accent-primary w-full appearance-none border-2 border-black p-3 font-mono text-sm shadow-[2px_2px_0px_#000] focus:ring-0"
             >
               <option value="DEFAULT" disabled>
-                {categories.length > 0
-                  ? `${categories.length} Selected`
+                {selectedCategories.length > 0
+                  ? `${selectedCategories.length} Selected`
                   : "All Categories"}
               </option>
               <option value="ALL">Clear selection</option>
-              {TRANSACTION_CATEGORIES.map((c) => (
+              {availableCategories.map((c) => (
                 <option key={c} value={c}>
-                  {categories.includes(c) ? "✓ " : ""}
+                  {selectedCategories.includes(c) ? "✓ " : ""}
                   {c}
                 </option>
               ))}
@@ -372,7 +374,17 @@ export default function TransactionsPage() {
                         </span>
                       </td>
                       <td className="p-4">
-                        <span className="bg-bg-elevated text-text-secondary border-divider border px-2 py-1 text-xs">
+                        <span
+                          className="border px-2 py-1 text-xs font-bold uppercase transition-all"
+                          style={{
+                            backgroundColor: getCategoryColorRGBA(
+                              t.category,
+                              0.2
+                            ),
+                            borderColor: getCategoryColor(t.category),
+                            color: getCategoryColor(t.category),
+                          }}
+                        >
                           {t.category}
                         </span>
                       </td>

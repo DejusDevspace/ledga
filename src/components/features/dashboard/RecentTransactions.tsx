@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, BarChart2 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { formatNaira, formatDate } from "@/lib/analytics/formatters";
+import { getCategoryColor, getCategoryColorRGBA } from "@/lib/analytics/colors";
 import type { Transaction } from "@/types/transaction";
 
 interface Props {
@@ -81,8 +82,17 @@ export default function RecentTransactions({ transactions }: Props) {
                       {tx.type.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-2 py-4 text-sm italic opacity-80">
-                    {tx.category}
+                  <td className="px-2 py-4">
+                    <span
+                      className="border px-2 py-0.5 text-[10px] font-bold uppercase transition-all"
+                      style={{
+                        backgroundColor: getCategoryColorRGBA(tx.category, 0.2),
+                        borderColor: getCategoryColor(tx.category),
+                        color: getCategoryColor(tx.category),
+                      }}
+                    >
+                      {tx.category}
+                    </span>
                   </td>
                   <td className="px-2 py-4 text-sm">{tx.description}</td>
                   <td

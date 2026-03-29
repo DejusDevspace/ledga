@@ -4,20 +4,12 @@ import { useState, useEffect } from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import type { CategoryTotal } from "@/types/analytics";
 import { formatNaira } from "@/lib/analytics/formatters";
+import { getCategoryColor } from "@/lib/analytics/colors";
 
 interface Props {
   data: CategoryTotal[];
   totalExpenses: number;
 }
-
-const COLORS = [
-  "#E2C94A", // accent-gold
-  "#4A90E2", // accent-primary
-  "#E24A4A", // accent-red
-  "#4AE290", // accent-green
-  "#A0A8B8", // text-secondary
-  "#0F3460", // bg-elevated
-];
 
 export default function CategoryDonutChart({ data, totalExpenses }: Props) {
   const [hasMounted, setHasMounted] = useState(false);
@@ -42,13 +34,9 @@ export default function CategoryDonutChart({ data, totalExpenses }: Props) {
         </div>
 
         {!hasMounted ? (
-          <div className="skeleton h-[200px] w-[200px] rounded-full" />
+          <div className="skeleton h-50 w-50 rounded-full" />
         ) : (
-          <ResponsiveContainer
-            width="100%"
-            height={200}
-            debounce={100}
-          >
+          <ResponsiveContainer width="100%" height={200} debounce={100}>
             <PieChart>
               <Pie
                 data={data}
@@ -58,10 +46,10 @@ export default function CategoryDonutChart({ data, totalExpenses }: Props) {
                 dataKey="total"
                 stroke="none"
               >
-                {data.map((entry, index) => (
+                {data.map((entry) => (
                   <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
+                    key={`cell-${entry.category}`}
+                    fill={getCategoryColor(entry.category)}
                   />
                 ))}
               </Pie>
@@ -81,7 +69,7 @@ export default function CategoryDonutChart({ data, totalExpenses }: Props) {
             >
               <div
                 className="h-2 w-2"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                style={{ backgroundColor: getCategoryColor(item.category) }}
               />
               <span className="font-mono text-[10px] uppercase">
                 {item.category} ({percentage.toFixed(0)}%)

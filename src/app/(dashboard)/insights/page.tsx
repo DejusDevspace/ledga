@@ -7,9 +7,9 @@ import { useActiveSheet } from "@/hooks/useActiveSheet";
 import { useTransactions } from "@/hooks/useTransactions";
 import { usePeriod } from "@/hooks/usePeriod";
 import { PERIOD_OPTIONS } from "@/constants/periods";
-import { TRANSACTION_CATEGORIES } from "@/constants/categories";
 import { ROUTES } from "@/constants/routes";
 import { formatNaira } from "@/lib/analytics/formatters";
+import { getCategoryColor } from "@/lib/analytics/colors";
 import {
   filterByPeriod,
   filterByType,
@@ -34,7 +34,7 @@ export default function InsightsPage() {
   const { loading: sheetsLoading } = useUserSheets();
   const { activeSheet } = useActiveSheet();
   const { period, setPeriod } = usePeriod();
-  const { transactions, loading: txLoading } = useTransactions(
+  const { transactions, categories: availableCategories, loading: txLoading } = useTransactions(
     activeSheet?.sheetId ?? null
   );
 
@@ -192,8 +192,11 @@ export default function InsightsPage() {
                   </div>
                   <div className="bg-bg-elevated h-6 border-2 border-black">
                     <div
-                      className="bg-accent-gold h-full border-r-2 border-black transition-all duration-500"
-                      style={{ width: `${Math.min(100, cat.percentage)}%` }}
+                      className="h-full border-r-2 border-black transition-all duration-500"
+                      style={{ 
+                        width: `${Math.min(100, cat.percentage)}%`,
+                        backgroundColor: getCategoryColor(cat.category)
+                      }}
                     />
                   </div>
                 </div>
@@ -272,17 +275,19 @@ export default function InsightsPage() {
           </h2>
 
           <div className="mb-8 flex flex-wrap gap-3">
-            {TRANSACTION_CATEGORIES.map((cat) => {
+            {availableCategories.map((cat) => {
               const isActive = selectedCategory === cat;
+              const catColor = getCategoryColor(cat);
               return (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(isActive ? null : cat)}
                   className={`font-display border-2 border-black px-4 py-2 text-xs font-bold uppercase transition-colors ${
                     isActive
-                      ? "bg-accent-primary translate-x-0.5 translate-y-0.5 text-black shadow-[4px_4px_0px_#000]"
+                      ? "translate-x-0.5 translate-y-0.5 text-black shadow-[4px_4px_0px_#000]"
                       : "bg-bg-elevated hover:bg-bg-surface text-white"
                   }`}
+                  style={isActive ? { backgroundColor: catColor } : {}}
                 >
                   {cat}
                 </button>

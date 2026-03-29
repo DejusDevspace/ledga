@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Transaction } from "@/types";
 
 interface UseTransactionsReturn {
   transactions: Transaction[];
+  categories: string[];
   loading: boolean;
   error: string | null;
   fromCache: boolean;
@@ -18,6 +19,15 @@ export function useTransactions(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
+
+  // Derive unique categories from transactions
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of transactions) {
+      if (t.category) set.add(t.category);
+    }
+    return Array.from(set).sort();
+  }, [transactions]);
 
   const fetchData = useCallback(
     async (refresh = false) => {
@@ -58,5 +68,5 @@ export function useTransactions(
     fetchData(true);
   }, [fetchData]);
 
-  return { transactions, loading, error, fromCache, refresh };
+  return { transactions, categories, loading, error, fromCache, refresh };
 }
