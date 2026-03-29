@@ -9,14 +9,14 @@ export default async function ProfilePage({
 }) {
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) redirect("/login");
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single();
 
   const sp = await searchParams;
@@ -24,8 +24,8 @@ export default async function ProfilePage({
   return (
     <ProfileForm
       profile={{
-        id: session.user.id,
-        email: session.user.email ?? "",
+        id: user.id,
+        email: user.email ?? "",
         displayName: profile?.display_name ?? "",
       }}
       success={sp.success === "true"}
