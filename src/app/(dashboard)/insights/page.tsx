@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useUserSheets } from "@/hooks/useUserSheets";
 import { useActiveSheet } from "@/hooks/useActiveSheet";
 import { useTransactions } from "@/hooks/useTransactions";
 import { usePeriod } from "@/hooks/usePeriod";
 import { PERIOD_OPTIONS } from "@/constants/periods";
 import { TRANSACTION_CATEGORIES } from "@/constants/categories";
 import { ROUTES } from "@/constants/routes";
-import { formatNaira, formatPercent } from "@/lib/analytics/formatters";
+import { formatNaira } from "@/lib/analytics/formatters";
 import {
   filterByPeriod,
   filterByType,
@@ -23,22 +24,21 @@ import {
   TrendingUp,
   Receipt,
   Filter,
-  ArrowRight,
 } from "lucide-react";
 
 import SpendingTrendChart from "@/components/charts/SpendingTrendChart";
 import IncomeStabilityChart from "@/components/charts/IncomeStabilityChart";
 import SavingsRateChart from "@/components/charts/SavingsRateChart";
-import type { UserSheet } from "@/types";
 
 export default function InsightsPage() {
+  const { loading: sheetsLoading } = useUserSheets();
+  const { activeSheet } = useActiveSheet();
   const { period, setPeriod } = usePeriod();
-  // We initialize active sheet from empty array to rely on localStorage hook effect fallback,
-  // since this is a pure client fallback if we didn't fetch sheets server-side.
-  const { activeSheet } = useActiveSheet([]);
-  const { transactions, loading } = useTransactions(
+  const { transactions, loading: txLoading } = useTransactions(
     activeSheet?.sheetId ?? null
   );
+
+  const loading = sheetsLoading || txLoading;
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -67,7 +67,6 @@ export default function InsightsPage() {
     () => groupByCategory(filteredTx).slice(0, 5),
     [filteredTx]
   );
-  const totalTopExpense = topCategories.reduce((acc, c) => acc + c.total, 0); // Need total expenses instead of top? Actually percentage from `c.percentage` is already based on all expenses. Wait, Stitch says progress bar width! `c.percentage` is perfect.
 
   // Card 3
   const incomeStabilityData = useMemo(

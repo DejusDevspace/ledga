@@ -8,11 +8,11 @@ import {
   TrendingUp,
   FileText,
   Settings,
-  Layers,
   LogOut,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { signOut } from "@/lib/supabase/actions";
+import SheetSwitcher from "@/components/layout/SheetSwitcher";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard },
@@ -60,12 +60,8 @@ export default function Sidebar() {
       </nav>
 
       {/* SECTION 3 — Bottom block */}
-      <div className="mt-auto flex flex-col gap-2 border-t-2 border-black pt-4">
-        {/* Sheet Switcher trigger — TODO: replace with <SheetSwitcher /> in Phase 5C */}
-        <button className="font-display hover:bg-bg-elevated hover:text-accent-primary flex w-full items-center gap-3 p-3 font-bold tracking-tighter text-white uppercase transition-all">
-          <Layers size={20} />
-          <span>Sheet Switcher</span>
-        </button>
+      <div className="mt-auto flex flex-col gap-4 border-t-2 border-black pt-4">
+        <SheetSwitcher />
 
         {/* Logout */}
         <form action={signOut}>

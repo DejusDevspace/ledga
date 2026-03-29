@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransactions } from "@/hooks/useTransactions";
+import { useUserSheets } from "@/hooks/useUserSheets";
 import { useActiveSheet } from "@/hooks/useActiveSheet";
 import { usePeriod } from "@/hooks/usePeriod";
 import {
@@ -23,23 +24,21 @@ import { formatNaira, formatPercent } from "@/lib/analytics/formatters";
 import IncomeExpenseChart from "@/components/charts/IncomeExpenseChart";
 import CategoryDonutChart from "@/components/charts/CategoryDonutChart";
 import RecentTransactions from "@/components/features/dashboard/RecentTransactions";
-import type { UserSheet } from "@/types/sheet";
 
-interface Props {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  profile?: any;
-  sheets: UserSheet[];
-}
-
-export default function DashboardClient({ sheets }: Props) {
-  const { period, setPeriod } = useActiveSheetAndPeriodProvider(sheets);
-  // Wait, I need to use the hooks separately. Let's declare them here.
-  const { activeSheet } = useActiveSheet(sheets);
+export default function DashboardClient() {
+  const { loading: sheetsLoading } = useUserSheets();
+  const { activeSheet } = useActiveSheet();
   const { period: currentPeriod, setPeriod: setCurrentPeriod } = usePeriod();
 
-  const { transactions, loading, error, refresh, fromCache } = useTransactions(
-    activeSheet?.sheetId ?? null
-  );
+  const {
+    transactions,
+    loading: txLoading,
+    error,
+    refresh,
+    fromCache,
+  } = useTransactions(activeSheet?.sheetId ?? null);
+
+  const loading = sheetsLoading || txLoading;
 
   // Debug: fromCache indicator per instructions
   if (!loading && !error) {
@@ -212,12 +211,4 @@ export default function DashboardClient({ sheets }: Props) {
       )}
     </>
   );
-}
-
-// Dummy helper wrapper hook inside this file because I incorrectly mocked `useActiveSheetAndPeriodProvider` above
-function useActiveSheetAndPeriodProvider(sheets: UserSheet[]) {
-  const { activeSheet, setActiveSheet } = useActiveSheet(sheets);
-  const { period, setPeriod } = usePeriod();
-
-  return { activeSheet, setActiveSheet, period, setPeriod };
 }

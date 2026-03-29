@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useMemo } from "react";
+import { useUserSheets } from "@/hooks/useUserSheets";
 import { useActiveSheet } from "@/hooks/useActiveSheet";
 import { useTransactions } from "@/hooks/useTransactions";
 import { usePeriod } from "@/hooks/usePeriod";
@@ -15,56 +15,26 @@ import {
 } from "@/lib/analytics/filters";
 import { TRANSACTION_CATEGORIES } from "@/constants/categories";
 import { formatNaira, formatDate } from "@/lib/analytics/formatters";
-import type { UserSheet, Transaction } from "@/types";
+import type { Transaction } from "@/types";
 import {
   Download,
   ChevronDown,
   ChevronUp,
   ChevronsUpDown,
   Search,
-  Calendar,
 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 10;
 
 export default function TransactionsPage() {
-  const [sheets, setSheets] = useState<UserSheet[]>([]);
-  const supabase = createClient();
-
-  useEffect(() => {
-    async function loadSheets() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
-      const { data } = await supabase
-        .from("user_sheets")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .order("is_primary", { ascending: false });
-
-      if (data) {
-        setSheets(
-          data.map((s) => ({
-            id: s.id,
-            userId: s.user_id,
-            sheetId: s.sheet_id,
-            sheetLabel: s.sheet_label || s.title || "Untitled",
-            formUrl: s.form_url || undefined,
-            isPrimary: s.is_primary,
-            createdAt: s.created_at,
-          }))
-        );
-      }
-    }
-    loadSheets();
-  }, [supabase]);
-
-  const { activeSheet } = useActiveSheet(sheets);
+  const { loading: sheetsLoading } = useUserSheets();
+  const { activeSheet } = useActiveSheet();
   const { period, setPeriod } = usePeriod();
-  const { transactions, loading } = useTransactions(
+  const { transactions, loading: txLoading } = useTransactions(
     activeSheet?.sheetId ?? null
   );
+
+  const loading = sheetsLoading || txLoading;
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
