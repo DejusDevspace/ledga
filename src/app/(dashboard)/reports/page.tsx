@@ -1,38 +1,38 @@
-export default function ReportsPage() {
-  // DUMMY ARRAY
-  const reports = [
-    { title: "Jan 2025 Report", status: "Generated" },
-    { title: "Feb 2025 Report", status: "Generated" },
-    { title: "Mar 2025 Report", status: "Pending" },
-  ];
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import ReportsClient from "@/components/features/reports/ReportsClient";
+import { MonthlyReport } from "@/types/reports";
+
+export const metadata = {
+  title: "Monthly Reports | Ledga",
+  description: "View and generate your monthly financial reports.",
+};
+
+export default async function ReportsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Fetch initial reports for the current user
+  const { data: reports, error } = await supabase
+    .from("monthly_reports")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("year", { ascending: false })
+    .order("month", { ascending: false });
+
+  if (error) {
+    console.error("[Ledga] Failed to fetch initial reports:", error);
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="font-display text-text-primary text-3xl font-bold">
-          Reports
-        </h1>
-        <p className="text-text-secondary mt-2">Monthly financial snapshots</p>
-      </header>
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {reports.map((r, i) => (
-          <div key={i} className="card-brutalist flex flex-col gap-4">
-            <h3 className="font-display text-lg font-bold">{r.title}</h3>
-            <span
-              className={`badge ${r.status === "Generated" ? "badge-income" : "badge-elevated"} self-start`}
-            >
-              {r.status}
-            </span>
-            <button
-              className="btn-outlined mt-auto w-full justify-center"
-              disabled={r.status !== "Generated"}
-            >
-              View
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+    <ReportsClient
+      initialReports={(reports || []) as MonthlyReport[]}
+    />
   );
 }

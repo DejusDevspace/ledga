@@ -116,13 +116,13 @@ function mapSheetRow(row: any): UserSheet {
 function mapReportRow(row: any): MonthlyReport {
   return {
     id: row.id,
-    userId: row.user_id,
+    user_id: row.user_id,
     month: row.month,
     year: row.year,
-    reportJson: row.report_json,
-    pdfUrl: row.pdf_url,
-    emailSent: row.email_sent,
-    createdAt: row.created_at,
+    report_json: row.report_json,
+    pdf_url: row.pdf_url,
+    email_sent: row.email_sent,
+    created_at: row.created_at,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

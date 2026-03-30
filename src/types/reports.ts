@@ -11,11 +11,11 @@ export interface ReportSnapshot {
 
 export interface MonthlyReport {
   id: string;
-  userId: string;
+  user_id: string;
   month: number;
   year: number;
-  reportJson: ReportSnapshot;
-  pdfUrl?: string;
-  emailSent: boolean;
-  createdAt: string;
+  report_json: ReportSnapshot;
+  pdf_url?: string;
+  email_sent: boolean;
+  created_at: string;
 }
