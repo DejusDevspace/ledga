@@ -77,16 +77,6 @@ export default function SheetsManager() {
 
     setLoading(true);
     try {
-      if (isPrimary) {
-        // Unset primary for all others (server-side handles integrity, but logic here for safety)
-        const currentPrimary = sheets.filter(
-          (s) => s.isPrimary && s.id !== editingSheet?.id
-        );
-        for (const s of currentPrimary) {
-          await updateUserSheet(supabase, s.id, { isPrimary: false });
-        }
-      }
-
       let newSheet: UserSheet;
       if (editingSheet) {
         newSheet = await updateUserSheet(supabase, editingSheet.id, {
