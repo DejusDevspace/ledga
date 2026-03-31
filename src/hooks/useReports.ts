@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/providers/SupabaseProvider";
 import { MonthlyReport } from "@/types/reports";
 
 /**
@@ -9,6 +9,7 @@ import { MonthlyReport } from "@/types/reports";
  * Handles fetching, refreshing, and local state management.
  */
 export function useReports(initialReports: MonthlyReport[]) {
+  const { supabase } = useSupabase();
   const [reports, setReports] = useState<MonthlyReport[]>(initialReports);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,6 @@ export function useReports(initialReports: MonthlyReport[]) {
     setLoading(true);
     setError(null);
     try {
-      const supabase = createClient();
       const { data, error: fetchError } = await supabase
         .from("monthly_reports")
         .select("*")
@@ -32,7 +32,7 @@ export function useReports(initialReports: MonthlyReport[]) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   return {
     reports,
