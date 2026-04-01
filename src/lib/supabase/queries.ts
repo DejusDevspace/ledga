@@ -45,6 +45,25 @@ export async function insertUserSheet(
     .single();
 
   if (error) throw error;
+
+  // Sync with profile if it's the primary sheet
+  if (sheet.isPrimary) {
+    const userId = sheet.userId;
+
+    // 1. Unset all other sheets for this user as primary
+    await supabase
+      .from("user_sheets")
+      .update({ is_primary: false })
+      .eq("user_id", userId)
+      .neq("id", data.id);
+
+    // 2. Update the profile with the new primary Google Sheet ID
+    await supabase
+      .from("profiles")
+      .update({ primary_sheet_id: sheet.sheetId })
+      .eq("id", userId);
+  }
+
   return mapSheetRow(data);
 }
 
@@ -68,6 +87,25 @@ export async function updateUserSheet(
     .single();
 
   if (error) throw error;
+
+  // Handle primary synchronization
+  if (updates.isPrimary === true) {
+    const userId = data.user_id;
+
+    // 1. Unset all other sheets for this user as primary
+    await supabase
+      .from("user_sheets")
+      .update({ is_primary: false })
+      .eq("user_id", userId)
+      .neq("id", id);
+
+    // 2. Update the profile with the new primary Google Sheet ID
+    await supabase
+      .from("profiles")
+      .update({ primary_sheet_id: data.sheet_id })
+      .eq("id", userId);
+  }
+
   return mapSheetRow(data);
 }
 
@@ -75,12 +113,27 @@ export async function deleteUserSheet(
   supabase: SupabaseClient,
   id: string
 ) {
+  // Fetch sheet before deleting to check if it's the primary
+  const { data: sheet } = await supabase
+    .from("user_sheets")
+    .select("user_id, sheet_id, is_primary")
+    .eq("id", id)
+    .single();
+
   const { error } = await supabase
     .from("user_sheets")
     .delete()
     .eq("id", id);
 
   if (error) throw error;
+
+  // If we just deleted the primary sheet, clear it from the profile
+  if (sheet?.is_primary) {
+    await supabase
+      .from("profiles")
+      .update({ primary_sheet_id: null })
+      .eq("id", sheet.user_id);
+  }
 }
 
 // ─── Reports ────────────────────────────────────────────
@@ -116,13 +169,13 @@ function mapSheetRow(row: any): UserSheet {
 function mapReportRow(row: any): MonthlyReport {
   return {
     id: row.id,
-    userId: row.user_id,
+    user_id: row.user_id,
     month: row.month,
     year: row.year,
-    reportJson: row.report_json,
-    pdfUrl: row.pdf_url,
-    emailSent: row.email_sent,
-    createdAt: row.created_at,
+    report_json: row.report_json,
+    pdf_url: row.pdf_url,
+    email_sent: row.email_sent,
+    created_at: row.created_at,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
