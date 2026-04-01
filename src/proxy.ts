@@ -2,9 +2,19 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = ["/login", "/signup"];
+const EXEMPT_API_ROUTES = ["/api/reports/generate"];
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+  const isExemptApi = EXEMPT_API_ROUTES.includes(pathname);
+
+  // Skip auth checks for public and exempt routes
+  if (isPublicRoute || isExemptApi) {
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,8 +38,6 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const { pathname } = request.nextUrl;
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
