@@ -19,6 +19,10 @@ export async function POST(request: NextRequest) {
   const isCronRequest =
     CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
 
+  console.log("Cron Secret", CRON_SECRET)
+  console.log("Auth Header", authHeader)
+  console.log("Cron Request?", isCronRequest)
+
   let userId: string | null = null;
   let isManualTrigger = false;
 
