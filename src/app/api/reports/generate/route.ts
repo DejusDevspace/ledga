@@ -79,31 +79,74 @@ export async function POST(request: NextRequest) {
   let usersToProcess: Array<{ userId: string; sheetId: string }> = [];
 
   if (isManualTrigger && userId) {
-    const { data: sheet } = await serviceClient
-      .from("user_sheets")
-      .select("sheet_id")
-      .eq("user_id", userId)
-      .eq("is_primary", true)
+    // 1. Check Profile first (Standard source of truth)
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("primary_sheet_id")
+      .eq("id", userId)
       .single();
 
-    if (!sheet) {
-      return NextResponse.json(
-        { error: "No primary sheet linked to your account" },
-        { status: 400 }
-      );
-    }
+    if (profile?.primary_sheet_id) {
+      usersToProcess = [{ userId, sheetId: profile.primary_sheet_id }];
+    } else {
+      // 2. Fallback: Search user_sheets for is_primary OR anything available
+      const { data: sheets } = await serviceClient
+        .from("user_sheets")
+        .select("sheet_id, is_primary")
+        .eq("user_id", userId)
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: true });
 
-    usersToProcess = [{ userId, sheetId: sheet.sheet_id }];
+      if (sheets && sheets.length > 0) {
+        usersToProcess = [{ userId, sheetId: sheets[0].sheet_id }];
+
+        // Auto-heal profiles table: Promote this to primary officially
+        await serviceClient
+          .from("profiles")
+          .update({ primary_sheet_id: sheets[0].sheet_id })
+          .eq("id", userId);
+      } else {
+        return NextResponse.json(
+          { error: "No primary sheet linked to your account. Add one in Settings." },
+          { status: 400 }
+        );
+      }
+    }
   } else {
-    const { data: sheets } = await serviceClient
+    // Cron path for all users
+    // Select users who have a primary sheet ID in profile
+    const { data: profiles } = await serviceClient
+      .from("profiles")
+      .select("id, primary_sheet_id")
+      .not("primary_sheet_id", "is", null);
+
+    const profileUsers = (profiles ?? []).map((p) => ({
+      userId: p.id,
+      sheetId: p.primary_sheet_id as string,
+    }));
+
+    // Find users who have sheets but NO primary ID in profile yet
+    const { data: fallbackSheets } = await serviceClient
       .from("user_sheets")
       .select("user_id, sheet_id")
-      .eq("is_primary", true);
+      .not("user_id", "in", `(${profileUsers.map((u) => u.userId).join(",") || "''"})`)
+      .order("is_primary", { ascending: false })
+      .order("created_at", { ascending: true });
 
-    usersToProcess = (sheets ?? []).map((s) => ({
-      userId: s.user_id,
-      sheetId: s.sheet_id,
+    // Deduplicate: Pick the first sheet per user
+    const userFallbackMap = new Map<string, string>();
+    for (const s of fallbackSheets ?? []) {
+      if (!userFallbackMap.has(s.user_id)) {
+        userFallbackMap.set(s.user_id, s.sheet_id);
+      }
+    }
+
+    const fallbackUsers = Array.from(userFallbackMap.entries()).map(([u, s]) => ({
+      userId: u,
+      sheetId: s,
     }));
+
+    usersToProcess = [...profileUsers, ...fallbackUsers];
   }
 
   // ── Generate report for each user ─────────────────────────
