@@ -7,6 +7,7 @@ export default function SettingsNav() {
   const pathname = usePathname();
 
   const links = [
+    { label: "Setup Guide", href: "/settings/guide" },
     { label: "Profile", href: "/settings/profile" },
     { label: "Linked Sheets", href: "/settings/sheets" },
     { label: "Preferences", href: "/settings/preferences" },

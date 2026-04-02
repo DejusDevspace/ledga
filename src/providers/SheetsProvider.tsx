@@ -27,11 +27,17 @@ interface SheetsContextType {
 
 const SheetsContext = createContext<SheetsContextType | undefined>(undefined);
 
-export function SheetsProvider({ children }: { children: React.ReactNode }) {
+export function SheetsProvider({
+  children,
+  initialSheets = [],
+}: {
+  children: React.ReactNode;
+  initialSheets?: UserSheet[];
+}) {
   const { supabase, user, loading: authLoading } = useSupabase();
-  const [sheets, setSheets] = useState<UserSheet[]>([]);
+  const [sheets, setSheets] = useState<UserSheet[]>(initialSheets);
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialSheets.length === 0);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSheets = useCallback(async () => {
