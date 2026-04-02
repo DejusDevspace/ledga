@@ -22,7 +22,7 @@ export async function signUpWithEmail(formData: FormData) {
   });
 
   if (error) {
-    if (error.message.includes("signup_not_allowed")) {
+    if (error.message.includes("Database error saving new user")) {
       redirect(
         `${ROUTES.SIGNUP}?error=${encodeURIComponent(
           "This email is not on the approved list. Contact your family admin."
