@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ExternalLink, PlusSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { useUserSheets } from "@/hooks/useUserSheets";
 import {
@@ -12,13 +13,9 @@ import {
 import type { UserSheet } from "@/types";
 
 export default function SheetsManager() {
+  const router = useRouter();
   const { supabase, user } = useSupabase();
-  const {
-    sheets,
-    addSheet,
-    updateSheet,
-    removeSheet,
-  } = useUserSheets();
+  const { sheets, addSheet, updateSheet, removeSheet } = useUserSheets();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSheet, setEditingSheet] = useState<UserSheet | null>(null);
@@ -78,6 +75,8 @@ export default function SheetsManager() {
     setLoading(true);
     try {
       let newSheet: UserSheet;
+      const isFirstSheet = sheets.length === 0;
+
       if (editingSheet) {
         newSheet = await updateUserSheet(supabase, editingSheet.id, {
           sheetLabel: label,
@@ -95,6 +94,11 @@ export default function SheetsManager() {
           isPrimary,
         });
         addSheet(newSheet);
+
+        // Completion flow for first sheet
+        if (isFirstSheet) {
+          router.push("/settings/sheets?setup=complete");
+        }
       }
 
       setShowAddForm(false);
