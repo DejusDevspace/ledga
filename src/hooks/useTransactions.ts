@@ -39,7 +39,6 @@ export function useTransactions(sheetId: string | null): UseTransactionsReturn {
       };
     },
     enabled: Boolean(sheetId),
-    placeholderData: (previousData) => previousData,
   });
 
   const transactions = query.data?.transactions ?? EMPTY_TRANSACTIONS;
