@@ -3,15 +3,18 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   useCallback,
   useMemo,
 } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "@/providers/SupabaseProvider";
+import { getUserSheets } from "@/lib/supabase/queries";
+import { queryKeys } from "@/lib/query/keys";
 import type { UserSheet } from "@/types/sheet";
 
 const STORAGE_KEY = "ledga_active_sheet_id";
+const EMPTY_SHEETS: UserSheet[] = [];
 
 interface SheetsContextType {
   sheets: UserSheet[];
@@ -35,65 +38,27 @@ export function SheetsProvider({
   initialSheets?: UserSheet[];
 }) {
   const { supabase, user, loading: authLoading } = useSupabase();
-  const [sheets, setSheets] = useState<UserSheet[]>(initialSheets);
-  const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(initialSheets.length === 0);
-  const [error, setError] = useState<string | null>(null);
+  const userId = user?.id;
+  const queryClient = useQueryClient();
+  const [activeSheetId, setActiveSheetId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(STORAGE_KEY);
+  });
 
-  const fetchSheets = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  const sheetsQuery = useQuery({
+    queryKey: queryKeys.userSheets(userId),
+    queryFn: () => getUserSheets(supabase),
+    enabled: !authLoading && Boolean(userId),
+    initialData: initialSheets,
+  });
 
-    try {
-      setLoading(true);
-      const { data, error: fetchError } = await supabase
-        .from("user_sheets")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("is_primary", { ascending: false })
-        .order("created_at", { ascending: true });
+  const sheets = sheetsQuery.data ?? EMPTY_SHEETS;
 
-      if (fetchError) throw fetchError;
-
-      const mappedSheets: UserSheet[] = (data || []).map((s) => ({
-        id: s.id,
-        userId: s.user_id,
-        sheetId: s.sheet_id,
-        sheetLabel: s.sheet_label || s.title || "Untitled",
-        formUrl: s.form_url || undefined,
-        isPrimary: s.is_primary,
-        createdAt: s.created_at,
-      }));
-
-      setSheets(mappedSheets);
-      setError(null);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load sheets";
-      console.error("[SheetsProvider] Error fetching sheets:", err);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, user]);
-
-  useEffect(() => {
-    if (!authLoading) {
-      fetchSheets();
-    }
-  }, [authLoading, fetchSheets]);
-
-  // Load active sheet ID from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setActiveSheetId(saved);
-      }
-    }
-  }, []);
+  const refreshSheets = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.userSheets(userId),
+    });
+  }, [queryClient, userId]);
 
   const activeSheet = useMemo(() => {
     if (sheets.length === 0) return null;
@@ -111,45 +76,63 @@ export function SheetsProvider({
     }
   }, []);
 
-  const addSheet = useCallback((newSheet: UserSheet) => {
-    setSheets((prev) => {
-      if (newSheet.isPrimary) {
-        return [newSheet, ...prev.map((s) => ({ ...s, isPrimary: false }))];
-      }
-      return [...prev, newSheet];
-    });
-  }, []);
+  const addSheet = useCallback(
+    (newSheet: UserSheet) => {
+      queryClient.setQueryData<UserSheet[]>(
+        queryKeys.userSheets(userId),
+        (prev = []) => {
+          if (newSheet.isPrimary) {
+            return sortSheets([
+              newSheet,
+              ...prev.map((s) => ({ ...s, isPrimary: false })),
+            ]);
+          }
+          return sortSheets([...prev, newSheet]);
+        }
+      );
+    },
+    [queryClient, userId]
+  );
 
-  const updateSheet = useCallback((updatedSheet: UserSheet) => {
-    setSheets((prev) => {
-      let next = prev.map((s) => (s.id === updatedSheet.id ? updatedSheet : s));
-      if (updatedSheet.isPrimary) {
-        next = next.map((s) =>
-          s.id === updatedSheet.id ? s : { ...s, isPrimary: false }
-        );
-      }
-      return next.sort((a, b) => {
-        if (a.isPrimary) return -1;
-        if (b.isPrimary) return 1;
-        return (
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-      });
-    });
-  }, []);
+  const updateSheet = useCallback(
+    (updatedSheet: UserSheet) => {
+      queryClient.setQueryData<UserSheet[]>(
+        queryKeys.userSheets(userId),
+        (prev = []) => {
+          let next = prev.map((s) =>
+            s.id === updatedSheet.id ? updatedSheet : s
+          );
+          if (updatedSheet.isPrimary) {
+            next = next.map((s) =>
+              s.id === updatedSheet.id ? s : { ...s, isPrimary: false }
+            );
+          }
+          return sortSheets(next);
+        }
+      );
+    },
+    [queryClient, userId]
+  );
 
-  const removeSheet = useCallback((id: string) => {
-    setSheets((prev) => prev.filter((s) => s.id !== id));
-  }, []);
+  const removeSheet = useCallback(
+    (id: string) => {
+      queryClient.setQueryData<UserSheet[]>(
+        queryKeys.userSheets(userId),
+        (prev = []) => prev.filter((s) => s.id !== id)
+      );
+    },
+    [queryClient, userId]
+  );
 
   const value = useMemo(
     () => ({
       sheets,
       activeSheet,
-      loading: loading || authLoading,
-      error,
+      loading: authLoading || (Boolean(userId) && sheetsQuery.isPending),
+      error:
+        sheetsQuery.error instanceof Error ? sheetsQuery.error.message : null,
       setActiveSheet,
-      refresh: fetchSheets,
+      refresh: refreshSheets,
       addSheet,
       updateSheet,
       removeSheet,
@@ -157,11 +140,12 @@ export function SheetsProvider({
     [
       sheets,
       activeSheet,
-      loading,
       authLoading,
-      error,
+      userId,
+      sheetsQuery.isPending,
+      sheetsQuery.error,
       setActiveSheet,
-      fetchSheets,
+      refreshSheets,
       addSheet,
       updateSheet,
       removeSheet,
@@ -179,4 +163,12 @@ export function useSheets() {
     throw new Error("useSheets must be used within a SheetsProvider");
   }
   return context;
+}
+
+function sortSheets(sheets: UserSheet[]) {
+  return [...sheets].sort((a, b) => {
+    if (a.isPrimary) return -1;
+    if (b.isPrimary) return 1;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
 }

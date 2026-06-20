@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Transaction } from "@/types";
+import { queryKeys } from "@/lib/query/keys";
+
+const EMPTY_TRANSACTIONS: Transaction[] = [];
 
 interface UseTransactionsReturn {
   transactions: Transaction[];
@@ -12,13 +16,33 @@ interface UseTransactionsReturn {
   refresh: () => void;
 }
 
-export function useTransactions(
-  sheetId: string | null
-): UseTransactionsReturn {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fromCache, setFromCache] = useState(false);
+export function useTransactions(sheetId: string | null): UseTransactionsReturn {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: queryKeys.transactions(sheetId),
+    queryFn: async () => {
+      if (!sheetId) {
+        return { transactions: [] as Transaction[], fromCache: false };
+      }
+
+      const res = await fetch(`/api/sheets/${sheetId}`);
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error ?? "Failed to load transactions");
+      }
+
+      return {
+        transactions: json.transactions as Transaction[],
+        fromCache: Boolean(json.fromCache),
+      };
+    },
+    enabled: Boolean(sheetId),
+    placeholderData: (previousData) => previousData,
+  });
+
+  const transactions = query.data?.transactions ?? EMPTY_TRANSACTIONS;
 
   // Derive unique categories from transactions
   const categories = useMemo(() => {
@@ -29,44 +53,33 @@ export function useTransactions(
     return Array.from(set).sort();
   }, [transactions]);
 
-  const fetchData = useCallback(
-    async (refresh = false) => {
-      if (!sheetId) return;
+  const refresh = useCallback(() => {
+    if (!sheetId) return;
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        const url = refresh
-          ? `/api/sheets/${sheetId}?refresh=true`
-          : `/api/sheets/${sheetId}`;
-
-        const res = await fetch(url);
+    queryClient.fetchQuery({
+      queryKey: queryKeys.transactions(sheetId),
+      queryFn: async () => {
+        const res = await fetch(`/api/sheets/${sheetId}?refresh=true`);
         const json = await res.json();
 
         if (!res.ok) {
-          setError(json.error ?? "Failed to load transactions");
-          return;
+          throw new Error(json.error ?? "Failed to load transactions");
         }
 
-        setTransactions(json.transactions);
-        setFromCache(json.fromCache);
-      } catch {
-        setError("Failed to load transactions");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [sheetId]
-  );
+        return {
+          transactions: json.transactions as Transaction[],
+          fromCache: Boolean(json.fromCache),
+        };
+      },
+    });
+  }, [queryClient, sheetId]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const refresh = useCallback(() => {
-    fetchData(true);
-  }, [fetchData]);
-
-  return { transactions, categories, loading, error, fromCache, refresh };
+  return {
+    transactions,
+    categories,
+    loading: query.isPending && Boolean(sheetId),
+    error: query.error instanceof Error ? query.error.message : null,
+    fromCache: query.data?.fromCache ?? false,
+    refresh,
+  };
 }

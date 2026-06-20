@@ -1,43 +1,42 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { MonthlyReport } from "@/types/reports";
+import { getUserReports } from "@/lib/supabase/queries";
+import { queryKeys } from "@/lib/query/keys";
 
 /**
  * Hook to manage monthly reports on the client.
  * Handles fetching, refreshing, and local state management.
  */
 export function useReports(initialReports: MonthlyReport[]) {
-  const { supabase } = useSupabase();
-  const [reports, setReports] = useState<MonthlyReport[]>(initialReports);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { supabase, user } = useSupabase();
+  const userId = user?.id;
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: queryKeys.reports(userId),
+    queryFn: () => getUserReports(supabase),
+    enabled: Boolean(userId),
+    initialData: initialReports,
+  });
 
   const refreshReports = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("monthly_reports")
-        .select("*")
-        .order("year", { ascending: false })
-        .order("month", { ascending: false });
-
-      if (fetchError) throw fetchError;
-      setReports(data || []);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.reports(userId),
+      });
     } catch (err) {
       console.error("[Ledga] Failed to refresh reports:", err);
-      setError("Failed to refresh reports list");
-    } finally {
-      setLoading(false);
     }
-  }, [supabase]);
+  }, [queryClient, userId]);
 
   return {
-    reports,
-    loading,
-    error,
+    reports: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ? "Failed to refresh reports list" : null,
     refreshReports,
   };
 }
