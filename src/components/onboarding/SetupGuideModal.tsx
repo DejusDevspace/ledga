@@ -684,8 +684,8 @@ const STEPS: GuideStep[] = [
             Section A: DATE COLUMN
           </h4>
           <p className="font-body text-text-primary text-sm leading-relaxed">
-            1. Select range <span className="font-bold">A2:A</span> (all cells in
-            column A except the header). <br />
+            1. Select range <span className="font-bold">A2:A</span> (all cells
+            in column A except the header). <br />
             2. Data → Data validation → Add rule. <br />
             3. Criteria: <span className="font-bold">is valid date</span>.
           </p>
