@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserSheets } from "@/lib/supabase/queries";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { Suspense } from "react";
+import PageLoading from "@/components/ui/PageLoading";
 
 export default async function DashboardLayout({
   children,
@@ -19,14 +20,15 @@ export default async function DashboardLayout({
   return (
     <SupabaseProvider>
       <SheetsProvider initialSheets={sheets}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<PageLoading label="Loading workspace" />}>
           <DashboardShell hasSheets={hasSheets} initialSheets={sheets}>
             <div className="bg-bg-base relative flex min-h-screen">
               {/* Subtle dot-grid background — decorative only */}
               <div
                 className="pointer-events-none fixed inset-0 z-0 opacity-[0.04]"
                 style={{
-                  backgroundImage: "radial-gradient(#A4C9FF 1px, transparent 1px)",
+                  backgroundImage:
+                    "radial-gradient(#A4C9FF 1px, transparent 1px)",
                   backgroundSize: "24px 24px",
                 }}
               />

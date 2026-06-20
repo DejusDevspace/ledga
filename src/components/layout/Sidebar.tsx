@@ -13,6 +13,7 @@ import {
 import { ROUTES } from "@/constants/routes";
 import { signOut } from "@/lib/supabase/actions";
 import SheetSwitcher from "@/components/layout/SheetSwitcher";
+import PendingNavIndicator from "@/components/layout/PendingNavIndicator";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard },
@@ -54,6 +55,7 @@ export default function Sidebar() {
             >
               <Icon size={20} />
               <span>{label}</span>
+              <PendingNavIndicator />
             </Link>
           );
         })}

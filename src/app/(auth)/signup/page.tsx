@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
+import AuthSubmitButton from "@/components/ui/AuthSubmitButton";
 
 export default async function SignupPage({
   searchParams,
@@ -168,8 +169,9 @@ export default async function SignupPage({
             </div>
 
             {/* Submit Button */}
-            <button
+            <AuthSubmitButton
               type="submit"
+              pendingLabel="Creating Account..."
               className="bg-accent-primary text-bg-base font-display group w-full border-[3px] border-black py-4 text-lg font-extrabold tracking-tight uppercase shadow-[4px_4px_0px_#000] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#000] active:translate-x-0 active:translate-y-0 active:shadow-none"
             >
               <span className="flex cursor-pointer items-center justify-center gap-2">
@@ -178,7 +180,7 @@ export default async function SignupPage({
                   <ArrowRight size={20} />
                 </span>
               </span>
-            </button>
+            </AuthSubmitButton>
           </form>
 
           {/* Footer — dashed divider + invitation notice */}
