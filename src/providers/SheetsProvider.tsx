@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   useCallback,
   useMemo,
@@ -40,10 +41,7 @@ export function SheetsProvider({
   const { supabase, user, loading: authLoading } = useSupabase();
   const userId = user?.id;
   const queryClient = useQueryClient();
-  const [activeSheetId, setActiveSheetId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(STORAGE_KEY);
-  });
+  const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
 
   const sheetsQuery = useQuery({
     queryKey: queryKeys.userSheets(userId),
@@ -59,6 +57,13 @@ export function SheetsProvider({
       queryKey: queryKeys.userSheets(userId),
     });
   }, [queryClient, userId]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      queueMicrotask(() => setActiveSheetId(saved));
+    }
+  }, []);
 
   const activeSheet = useMemo(() => {
     if (sheets.length === 0) return null;
