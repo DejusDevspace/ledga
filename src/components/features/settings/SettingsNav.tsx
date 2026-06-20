@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import PendingNavIndicator from "@/components/layout/PendingNavIndicator";
 
 export default function SettingsNav() {
   const pathname = usePathname();
@@ -21,13 +22,14 @@ export default function SettingsNav() {
           <Link
             key={link.href}
             href={link.href}
-            className={`font-display w-full border-2 border-black p-4 text-left font-bold tracking-tight uppercase transition-all ${
+            className={`font-display flex w-full items-center gap-3 border-2 border-black p-4 text-left font-bold tracking-tight uppercase transition-all ${
               isActive
                 ? "bg-accent-primary text-black shadow-[6px_6px_0px_#000] active:translate-x-1 active:translate-y-1 active:shadow-none"
                 : "bg-bg-surface text-text-primary hover:-translate-y-1 hover:shadow-[4px_4px_0px_#000]"
             }`}
           >
-            {link.label}
+            <span>{link.label}</span>
+            <PendingNavIndicator />
           </Link>
         );
       })}

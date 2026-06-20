@@ -59,7 +59,7 @@ export default function CategoryDonutChart({ data, totalExpenses }: Props) {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
-        {data.map((item, index) => {
+        {data.map((item) => {
           const percentage =
             totalExpenses > 0 ? (item.total / totalExpenses) * 100 : 0;
           return (

@@ -10,6 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
+import PendingNavIndicator from "@/components/layout/PendingNavIndicator";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: ROUTES.DASHBOARD, icon: LayoutDashboard },
@@ -38,7 +39,10 @@ export default function BottomNav() {
             }
           >
             <Icon size={22} />
-            <span>{label}</span>
+            <span className="flex items-center gap-1">
+              {label}
+              <PendingNavIndicator />
+            </span>
           </Link>
         );
       })}
