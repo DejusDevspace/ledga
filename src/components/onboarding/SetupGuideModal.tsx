@@ -13,7 +13,6 @@ import {
   Link as LinkIcon,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -791,7 +790,7 @@ const STEPS: GuideStep[] = [
         <div className="border-accent-red bg-accent-red/10 border-l-4 px-4 py-3">
           <p className="text-text-secondary font-mono text-xs leading-relaxed">
             ⚠️ Without this step, Ledga cannot read your data. The role must be
-            at least 'Viewer'.
+            at least &quot;Viewer&quot;.
           </p>
         </div>
       </div>

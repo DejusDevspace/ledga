@@ -18,19 +18,15 @@ export default function DashboardShell({
 }: DashboardShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [showGuide, setShowGuide] = useState(false);
-
-  // Auto-show guide if no sheets are linked on mount
-  useEffect(() => {
-    if (!hasSheets) {
-      setShowGuide(true);
-    }
-  }, [hasSheets]);
+  const [guideDismissed, setGuideDismissed] = useState(false);
+  const [guideRequested, setGuideRequested] = useState(false);
+  const setupComplete = searchParams.get("setup") === "complete";
+  const showGuide =
+    !setupComplete && (guideRequested || (!guideDismissed && !hasSheets));
 
   // Handle completion via URL param
   useEffect(() => {
-    if (searchParams.get("setup") === "complete") {
-      setShowGuide(false);
+    if (setupComplete) {
       // Clear the param and refresh to update server-side hasSheets
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.delete("setup");
@@ -38,10 +34,11 @@ export default function DashboardShell({
       router.replace(window.location.pathname + newQuery);
       router.refresh();
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, setupComplete]);
 
   const onGuideClose = () => {
-    setShowGuide(false);
+    setGuideDismissed(true);
+    setGuideRequested(false);
   };
 
   return (
@@ -49,12 +46,12 @@ export default function DashboardShell({
       {children}
       <FloatingGuideButton
         hasSheets={hasSheets}
-        onClick={() => setShowGuide(true)}
+        onClick={() => {
+          setGuideDismissed(false);
+          setGuideRequested(true);
+        }}
       />
-      <SetupGuideModal
-        isOpen={showGuide}
-        onClose={onGuideClose}
-      />
+      <SetupGuideModal isOpen={showGuide} onClose={onGuideClose} />
     </>
   );
 }
